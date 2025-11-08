@@ -4,9 +4,6 @@
 #' `r lifecycle::badge("experimental")`
 #' The apply_discounting function is designed to calculate the net present value of future costs or effects using a constant  discount rate, following the Dutch guidelines for economic evaluations in health care.  (section 2.6.1.2 version 2024). Here's a breakdown of how the function works:
 #'
-#'@Usage
-#' apply_discounting(v, ... )
-#'@Arguments
 #' @param values A numeric (vector of) costs or effects over time (one value per period).
 #' @param discount_rate Specifies the discount rate to be used. It can be "costs", "effects" or a custom numeric value
 #'   Acceptable values are:
@@ -22,26 +19,29 @@
 #'
 #' @examples
 #' # NO Discounting in First Year (t starts at 0)
-#' example: constant cost of 100 for 3 years,
+#' # Example: constant cost of 100 for 3 years
 #' apply_discounting(values = rep(100, 3), discount_rate = "costs", times = c(0, 1, 2))
 #'
 #' # WITH discounting in first year (t starts at 1)
-#' example: Constant cost of 100 for 3 years,
-#'  apply_discounting(values = rep(100, 3), discount_rate = "costs", times = c(1, 2, 3))
+#' # Example: Constant cost of 100 for 3 years
+#' apply_discounting(values = rep(100, 3), discount_rate = "costs", times = c(1, 2, 3))
 #'
 #' # Present value of 100 euro in 3 years
-#'  apply_discounting(values = 100, discount_rate = "costs", times = 3)
+#' apply_discounting(values = 100, discount_rate = "costs", times = 3)
 #'
 #' # Custom Discount Rate
-#' # example: discount rate of 4%, no discounting in first year
+#' # Example: discount rate of 4%, no discounting in first year
+#' # This will give you a message to inform you about the different discount rate
 #' apply_discounting(values = rep(100, 3), discount_rate = 0.04, times = c(0, 1, 2))
-#'#' This will give you a messages to inform you about the different discount rate
 #'
-#' Same applies to utility values
-#' Utility values with aggregation - NO discounting in first year
-#' apply_discounting(values = c(0.98, 0.82, 0.79), discount_rate = "effect", times = c(0, 1, 2), aggregate = TRUE, digits = 3)
+#' # Same applies to utility values
+#' # Utility values with aggregation - NO discounting in first year
+#' apply_discounting(values = c(0.98, 0.82, 0.79), discount_rate = "effects",
+#'                   times = c(0, 1, 2), aggregate = TRUE, digits = 3)
 #'
-#' @export `discounted_values`
+#' @return A numeric vector of discounted values. If \code{aggregate = TRUE}, returns a single numeric value representing the sum of all discounted values.
+#'
+#' @export
 #' @details
 #' This function ensures consistent application of discount rates in cost-effectiveness
 #' analyses, in line with Dutch guidelines. Custom rates can be specified when needed.

@@ -1,0 +1,39 @@
+#' Reference Prices Dataset
+#'
+#' @description
+#' A dataset containing reference prices from the Dutch Costing Manual for
+#' healthcare economic evaluations. This dataset includes reference prices
+#' across multiple years, domains, categories, and units.
+#'
+#' @format A data frame with reference price information:
+#' \describe{
+#'   \item{Domain}{The domain category (e.g., Medical, Patient/Family, Productivity)}
+#'   \item{Category}{The specific category within each domain}
+#'   \item{Unit}{The unit of measurement for the reference price}
+#'   \item{2022}{Reference prices for the year 2022}
+#'   \item{2023}{Reference prices for the year 2023}
+#'   \item{2024}{Reference prices for the year 2024}
+#' }
+#'
+#' @details
+#' This dataset is used internally by the \code{\link{nl_ref_prices}} function
+#' to retrieve reference prices for specific years, domains, categories, and units.
+#' Prices are available in both EUR and can be converted to INT$ using PPP factors.
+#'
+#' @source Dutch Costing Manual for Healthcare Economic Evaluations,
+#' ZIN (Zorginstituut Nederland)
+#' \url{https://www.zorginstituutnederland.nl/}
+#'
+#' @seealso \code{\link{nl_ref_prices}} for accessing reference prices
+#'
+#' @examples
+#' # View the structure of the dataset
+#' str(df_ref_prices)
+#'
+#' # See available domains
+#' unique(df_ref_prices$Domain)
+#'
+#' # Use the nl_ref_prices function to access the data
+#' nl_ref_prices(year = 2023, category = "Nursing")
+#'
+"df_ref_prices"
