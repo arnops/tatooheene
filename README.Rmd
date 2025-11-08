@@ -21,7 +21,7 @@ library(tidyverse)
 # tatooheene
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/USERNAME/tatooheene/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/USERNAME/tatooheene/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/arnops/tatooheene/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/arnops/tatooheene/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 This is the [T]{.underline}echnology [A]{.underline}ppraisal [Too]{.underline}lbox for [H]{.underline}ealth [E]{.underline}conomic [E]{.underline}valuations in the [Ne]{.underline}therlands.

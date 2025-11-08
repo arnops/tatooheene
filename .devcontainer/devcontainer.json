@@ -4,7 +4,7 @@
 	// 	"dockerfile": "Dockerfile",
 	// 	"context": ".."
 	// },
-	"image": "ghcr.io/tatooheene/tatooheene-devcontainer:latest",
+	"image": "ghcr.io/arnops/tatooheene-devcontainer:latest",
 	"remoteEnv": {
 		"SSH_AUTH_SOCK": "/ssh-agent",
 		"GIT_AUTHOR_NAME": "${localEnv:GIT_AUTHOR_NAME:${localEnv:USER}}",
