@@ -13,3 +13,5 @@
 ^dev$
 ^extra-old-folder$
 ^\.github$
+^RELEASE_PROCESS\.md$
+^\.devcontainer$

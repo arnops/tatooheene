@@ -30,6 +30,12 @@ The goal of this package is to make health economic evaluation models in R easie
 
 ## Installation
 
+Once available on CRAN, you can install the released version with:
+
+``` r
+ install.packages("tatooheene")
+```
+
 You can install the development version of tatooheene from [GitHub](https://github.com/) with:
 
 ``` r

@@ -1,5 +1,34 @@
 # tatooheene 0.19.0
 
+## New Features
+
+* Added `apply_discounting()` function for simplified discounting workflow
+* Enhanced discounting functionality with support for partial years
+* Added new example dataset for discounting demonstrations
+* Improved aggregate functionality with better naming conventions
+
+## Improvements
+
+* Updated discounting formulas and documentation
+* Enhanced vignettes with additional examples and clarifications
+* Improved input validation for discounting functions
+* Better handling of matrix columns in discounting operations
+* Updated reference prices function to consolidate different calculation methods
+
+## Bug Fixes
+
+* Fixed discount calculation issue (formerly committed from wrong branch)
+* Resolved data loading issue for `nl_price_index()` function
+* Fixed issue #3
+* Corrected factor calculations in depreciation/interest functions
+
+## Documentation
+
+* Expanded apply-discounting vignette with detailed examples
+* Added comprehensive documentation for timing of discounting events
+* Improved function descriptions and parameter documentation
+* Added test coverage for friction period and depreciation functions
+
 # tatooheene 0.18.0
 
 # tatooheene 0.17.0

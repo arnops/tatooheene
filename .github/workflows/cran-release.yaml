@@ -1,0 +1,180 @@
+# CRAN Release Workflow
+# This workflow prepares and validates a package release for CRAN submission
+# It performs comprehensive checks and creates a GitHub release with the source tarball
+
+name: CRAN Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.19.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check version in DESCRIPTION matches input
+        id: check
+        run: |
+          DESC_VERSION=$(grep '^Version:' DESCRIPTION | sed 's/Version: *//')
+          INPUT_VERSION="${{ github.event.inputs.version }}"
+          echo "DESCRIPTION version: $DESC_VERSION"
+          echo "Input version: $INPUT_VERSION"
+
+          if [ "$DESC_VERSION" != "$INPUT_VERSION" ]; then
+            echo "::error::Version in DESCRIPTION ($DESC_VERSION) does not match input version ($INPUT_VERSION)"
+            exit 1
+          fi
+          echo "version=$DESC_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        run: |
+          if git rev-parse "v${{ github.event.inputs.version }}" >/dev/null 2>&1; then
+            echo "::error::Tag v${{ github.event.inputs.version }} already exists"
+            exit 1
+          fi
+
+  cran-checks:
+    needs: validate-version
+    runs-on: ${{ matrix.config.os }}
+    name: CRAN Check - ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+    strategy:
+      fail-fast: true
+      matrix:
+        config:
+          - {os: ubuntu-latest, r: 'release'}
+          - {os: windows-latest, r: 'release'}
+          - {os: macos-latest, r: 'release'}
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, any::urlchecker
+          needs: check
+
+      - name: Check URLs
+        run: |
+          urlchecker::url_check()
+        shell: Rscript {0}
+        continue-on-error: true
+
+      - name: R CMD check (as-cran)
+        uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: true
+          error-on: '"error"'
+          args: 'c("--as-cran")'
+
+  build-release:
+    needs: cran-checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pkgbuild, any::devtools
+          needs: check
+
+      - name: Build source tarball
+        run: |
+          tarball <- pkgbuild::build(dest_path = ".", binary = FALSE, vignettes = TRUE, manual = TRUE)
+          cat("TARBALL_PATH=", tarball, "\n", file = Sys.getenv("GITHUB_ENV"), sep = "", append = TRUE)
+          cat("TARBALL_NAME=", basename(tarball), "\n", file = Sys.getenv("GITHUB_ENV"), sep = "", append = TRUE)
+        shell: Rscript {0}
+
+      - name: Upload tarball artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cran-tarball
+          path: ${{ env.TARBALL_PATH }}
+          retention-days: 30
+
+  create-release:
+    needs: [validate-version, build-release]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: cran-tarball
+
+      - name: Extract release notes
+        id: notes
+        run: |
+          VERSION="${{ needs.validate-version.outputs.version }}"
+
+          # Extract release notes from NEWS.md
+          awk "/^# tatooheene $VERSION/,/^# tatooheene [0-9]/" NEWS.md | \
+            sed '$d' | \
+            tail -n +2 > release_notes.md
+
+          # If no notes found, create a basic message
+          if [ ! -s release_notes.md ]; then
+            echo "Release version $VERSION" > release_notes.md
+            echo "" >> release_notes.md
+            echo "See NEWS.md for details." >> release_notes.md
+          fi
+
+      - name: Create git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ needs.validate-version.outputs.version }}" -m "Release version ${{ needs.validate-version.outputs.version }}"
+          git push origin "v${{ needs.validate-version.outputs.version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.validate-version.outputs.version }}
+          name: tatooheene ${{ needs.validate-version.outputs.version }}
+          body_path: release_notes.md
+          files: tatooheene_${{ needs.validate-version.outputs.version }}.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: CRAN submission instructions
+        run: |
+          echo "::notice::Release created successfully!"
+          echo "::notice::Next steps for CRAN submission:"
+          echo "::notice::1. Download the tarball: tatooheene_${{ needs.validate-version.outputs.version }}.tar.gz"
+          echo "::notice::2. Submit to CRAN at: https://cran.r-project.org/submit.html"
+          echo "::notice::3. Update cran-comments.md with submission details"
+          echo "::notice::4. Monitor your email for CRAN feedback"
