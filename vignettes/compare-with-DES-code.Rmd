@@ -2,7 +2,11 @@
 title: "Compare with code DES"
 author: "Eline Krijkamp"
 date: "2025-11-04"
-output: html_document
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Compare with code DES}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}

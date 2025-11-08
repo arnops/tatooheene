@@ -8,16 +8,18 @@
 
 #' These data can be used for demonstrating how to apply some of the package functionalities like discounting for the results of a model-based cost-effectiveness model.
 #'
+#' @name data_model_output_sick_sicker
+#' @docType data
 #' @format A collection of R objects saved as an `.RData` file containing:
 #' \describe{
-#'   \item{l_m_M_annual} {List: Markov trace results for the annual-cycle model.}
+#'   \item{l_m_M_annual}{List: Markov trace results for the annual-cycle model.}
 #'   \item{l_m_M_monthly}{List: Markov trace results for the monthly-cycle model.}
-#'   \item{v_wcc_annual} {Vector: half-cycle correction weights for the annual model.}
+#'   \item{v_wcc_annual}{Vector: half-cycle correction weights for the annual model.}
 #'   \item{v_wcc_monthly}{Vector: half-cycle correction weights for the monthly model.}
-#'   \item{v_names_str} {Vector: names of the interventions strategies used in the model.}
-#'   \item{l_u_annual} {List: annual utilities for each health state.}
+#'   \item{v_names_str}{Vector: names of the interventions strategies used in the model.}
+#'   \item{l_u_annual}{List: annual utilities for each health state.}
 #'   \item{l_u_monthly}{List: monthly utilities for each health state.}
-#'   \item{l_c_annual} {List: annual costs for each health state.}
+#'   \item{l_c_annual}{List: annual costs for each health state.}
 #'   \item{l_c_monthly}{List: monthly costs for each health state.}
 #' }
 #'
@@ -56,23 +58,56 @@
 #' ## Loop through each strategy and calculate total utilities and costs ----
 #'
 
-#'for (i in 1:length(v_names_str)) {
-#'  v_u_str <- l_u[[i]]   # select the vector of state utilities for the i-th strategy
-#'  v_c_str <- l_c[[i]]   # select the vector of state costs for the i-th strategy
+#' \dontrun{
+#' # This example requires additional setup of output vectors
+#' v_tot_qaly <- numeric(length(v_names_str))
+#' v_tot_cost <- numeric(length(v_names_str))
+#'
+#' for (i in 1:length(v_names_str)) {
+#'   v_u_str <- l_u_annual[[i]]   # select the vector of state utilities for the i-th strategy
+#'   v_c_str <- l_c_annual[[i]]   # select the vector of state costs for the i-th strategy
 #'
 #'   ###* Expected QALYs and costs per cycle
 #'   ##* Vector of QALYs and Costs
 #'   #* Apply state rewards
-#'   v_qaly_str <- l_m_M[[i]] %*% v_u_str # sum the utilities of all states for each cycle
-#'   v_cost_str <- l_m_M[[i]] %*% v_c_str # sum the costs of all states for each cycle
+#'   v_qaly_str <- l_m_M_annual[[i]] %*% v_u_str # sum the utilities of all states for each cycle
+#'   v_cost_str <- l_m_M_annual[[i]] %*% v_c_str # sum the costs of all states for each cycle
 #'
 #'   ###*  Total expected QALYs and costs per strategy and apply half-cycle correction (if applicable)
 #'   #* QALYs
-#'   v_tot_qaly[i] <- t(v_qaly_str) %*% v_wcc
+#'   v_tot_qaly[i] <- t(v_qaly_str) %*% v_wcc_annual
 #'   #* Costs
-#'   v_tot_cost[i] <- t(v_cost_str) %*% v_wcc
+#'   v_tot_cost[i] <- t(v_cost_str) %*% v_wcc_annual
+#' }
 #' }
 
-#'
-"data_model_output_sick_sicker"
+#' @keywords datasets
+NULL
+
+#' @rdname data_model_output_sick_sicker
+"l_m_M_annual"
+
+#' @rdname data_model_output_sick_sicker
+"l_m_M_monthly"
+
+#' @rdname data_model_output_sick_sicker
+"v_wcc_annual"
+
+#' @rdname data_model_output_sick_sicker
+"v_wcc_monthly"
+
+#' @rdname data_model_output_sick_sicker
+"v_names_str"
+
+#' @rdname data_model_output_sick_sicker
+"l_u_annual"
+
+#' @rdname data_model_output_sick_sicker
+"l_u_monthly"
+
+#' @rdname data_model_output_sick_sicker
+"l_c_annual"
+
+#' @rdname data_model_output_sick_sicker
+"l_c_monthly"
 
