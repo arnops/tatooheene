@@ -1,0 +1,258 @@
+---
+title: "Discounting with the Sick-Sicker model"
+author: "The tatooheene team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    number_sections: false
+vignette: >
+  %\VignetteIndexEntry{Discounting with the Sick-Sicker model}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4, dpi = 120
+)
+library(tatooheene)
+```
+
+## What this vignette covers
+
+This vignette provides a practical introduction to discounting in health economic models using the **Sick-Sicker** model as an example. You will learn:
+
+-   How to apply `apply_discounting()` to a 3-state Markov model
+-   How to discount both costs and health effects (QALYs)
+-   How to handle timing assumptions following Dutch guidelines
+
+## The Sick-Sicker model
+
+The Sick-Sicker model is a simple 3-state Markov cohort model developed by the DARTH (Decision Analysis in R for Technologies in Health) workgroup. The model tracks a cohort of individuals through the following health states:
+
+-   **H** (Healthy)
+-   **S1** (Sick)
+-   **S2** (Sicker)
+-   **D** (Dead)
+
+The model is used to evaluate different treatment strategies over time. The `tatooheene` package includes example output data from this model that we can use to demonstrate discounting.
+
+### Loading the data
+
+```{r load-data}
+# Load the Sick-Sicker model output data
+data("data_model_output_sick_sicker")
+
+# View the available strategies
+v_names_str
+```
+
+The dataset includes model results for two strategies: "Standard of care" and "Strategy A". Let's examine the Markov trace for the Standard of care strategy:
+
+```{r examine-trace}
+# View first few cycles of the annual Markov trace
+head(l_m_M_annual[["Standard of care"]])
+
+# The Markov trace shows the proportion of the cohort in each health state over time
+```
+
+## Calculating undiscounted QALYs
+
+Before applying discounting, let's calculate the total undiscounted QALYs. We do this by multiplying the Markov trace (proportion in each state) by the utility values for each state:
+
+```{r undiscounted-qalys}
+# Get the utility values for Standard of care
+l_u_annual[["Standard of care"]]
+
+# Calculate QALYs per cycle by multiplying trace by utilities
+# The %*% operator performs matrix multiplication
+v_qalys_per_cycle <- l_m_M_annual[["Standard of care"]] %*%
+                     l_u_annual[["Standard of care"]]
+
+# View first few cycles
+head(v_qalys_per_cycle)
+
+# Total undiscounted QALYs
+n_total_undiscounted_qalys <- sum(v_qalys_per_cycle)
+cat("Total undiscounted QALYs:", round(n_total_undiscounted_qalys, 2), "\n")
+```
+
+## Applying discounting to QALYs
+
+Following Dutch health economic guidelines, we apply a 1.5% discount rate to health effects and do not discount the first year. This is done using the `apply_discounting()` function:
+
+```{r discount-qalys}
+# Set up the time vector
+# Starting at 0 means the first year is not discounted
+n_cycles <- length(v_qalys_per_cycle)
+v_times <- seq(from = 0, to = n_cycles - 1, by = 1)
+
+# Apply discounting using the "effects" rate (1.5%)
+v_discounted_qalys <- apply_discounting(
+  values = v_qalys_per_cycle,
+  discount_rate = "effects",  # Uses 1.5% for health effects
+  times = v_times
+)
+
+# Total discounted QALYs
+n_total_discounted_qalys <- sum(v_discounted_qalys)
+
+cat("Total undiscounted QALYs:", round(n_total_undiscounted_qalys, 2), "\n")
+cat("Total discounted QALYs:  ", round(n_total_discounted_qalys, 2), "\n")
+cat("Difference:             ", round(n_total_undiscounted_qalys - n_total_discounted_qalys, 2), "\n")
+```
+
+As expected, discounting reduces the total QALYs because future health gains are valued less than immediate ones.
+
+## Applying discounting to costs
+
+The same approach applies to costs, but with a different discount rate. Dutch guidelines recommend a 3% discount rate for costs:
+
+```{r discount-costs}
+# Get the cost values for Standard of care
+l_c_annual[["Standard of care"]]
+
+# Calculate costs per cycle
+v_costs_per_cycle <- l_m_M_annual[["Standard of care"]] %*%
+                     l_c_annual[["Standard of care"]]
+
+# View first few cycles
+head(v_costs_per_cycle)
+
+# Total undiscounted costs
+n_total_undiscounted_costs <- sum(v_costs_per_cycle)
+
+# Apply discounting using the "costs" rate (3%)
+v_discounted_costs <- apply_discounting(
+  values = v_costs_per_cycle,
+  discount_rate = "costs",  # Uses 3% for costs
+  times = v_times
+)
+
+# Total discounted costs
+n_total_discounted_costs <- sum(v_discounted_costs)
+
+cat("Total undiscounted costs: €", format(round(n_total_undiscounted_costs, 2), big.mark = ","), "\n", sep = "")
+cat("Total discounted costs:   €", format(round(n_total_discounted_costs, 2), big.mark = ","), "\n", sep = "")
+cat("Difference:               €", format(round(n_total_undiscounted_costs - n_total_discounted_costs, 2), big.mark = ","), "\n", sep = "")
+```
+
+Notice that costs are discounted more heavily than QALYs (3% vs 1.5%), which reflects the principle that monetary costs should be discounted at a higher rate than health outcomes.
+
+## Comparing strategies
+
+Now let's compare both strategies side-by-side with discounting applied:
+
+```{r compare-strategies}
+# Function to calculate discounted QALYs and costs for a strategy
+calculate_discounted_outcomes <- function(strategy_name) {
+  # QALYs
+  v_qalys <- l_m_M_annual[[strategy_name]] %*% l_u_annual[[strategy_name]]
+  n_cycles <- length(v_qalys)
+  v_times <- seq(from = 0, to = n_cycles - 1, by = 1)
+
+  n_discounted_qalys <- sum(apply_discounting(
+    values = v_qalys,
+    discount_rate = "effects",
+    times = v_times
+  ))
+
+  # Costs
+  v_costs <- l_m_M_annual[[strategy_name]] %*% l_c_annual[[strategy_name]]
+  n_discounted_costs <- sum(apply_discounting(
+    values = v_costs,
+    discount_rate = "costs",
+    times = v_times
+  ))
+
+  return(list(qalys = n_discounted_qalys, costs = n_discounted_costs))
+}
+
+# Calculate for both strategies
+results <- lapply(v_names_str, calculate_discounted_outcomes)
+names(results) <- v_names_str
+
+# Create comparison table
+df_comparison <- data.frame(
+  Strategy = v_names_str,
+  Discounted_QALYs = sapply(results, function(x) round(x$qalys, 2)),
+  Discounted_Costs = sapply(results, function(x) round(x$costs, 2))
+)
+
+# Calculate incremental values
+df_comparison$Incremental_QALYs <- c(0, diff(df_comparison$Discounted_QALYs))
+df_comparison$Incremental_Costs <- c(0, diff(df_comparison$Discounted_Costs))
+
+# Calculate ICER for Strategy A
+icer <- df_comparison$Incremental_Costs[2] / df_comparison$Incremental_QALYs[2]
+df_comparison$ICER <- c(NA, round(icer, 2))
+
+print(df_comparison)
+```
+
+The table shows the discounted outcomes for each strategy and calculates the incremental cost-effectiveness ratio (ICER) for Strategy A compared to Standard of care.
+
+## Understanding the time vector
+
+The `times` argument is crucial for correct discounting. It specifies when outcomes occur:
+
+```{r time-vector-demo}
+# Starting at 0 means no discounting in the first year (Dutch guideline)
+v_times_no_discount_year1 <- seq(from = 0, to = 3, by = 1)
+print(v_times_no_discount_year1)
+
+# Starting at 1 means discounting from the first year
+v_times_discount_year1 <- seq(from = 1, to = 4, by = 1)
+print(v_times_discount_year1)
+
+# Example with a simple stream of 100 per year
+v_values <- rep(100, 4)
+
+cat("No discount in year 1: ",
+    sum(apply_discounting(v_values, "costs", v_times_no_discount_year1)), "\n")
+cat("Discount from year 1:  ",
+    sum(apply_discounting(v_values, "costs", v_times_discount_year1)), "\n")
+```
+
+Following Dutch guidelines, we use the first approach (starting at 0) to exclude the first year from discounting.
+
+## Using custom discount rates
+
+While the Dutch guidelines recommend 1.5% for effects and 3% for costs, you can specify custom discount rates:
+
+```{r custom-rates}
+# Example: using a 5% discount rate
+v_discounted_custom <- apply_discounting(
+  values = v_qalys_per_cycle,
+  discount_rate = 0.05,  # 5% as a decimal
+  times = v_times
+)
+
+cat("Discounted QALYs at 1.5%: ", round(sum(v_discounted_qalys), 2), "\n")
+cat("Discounted QALYs at 5%:   ", round(sum(v_discounted_custom), 2), "\n")
+```
+
+Higher discount rates reduce the present value more, as future outcomes are valued even less.
+
+## Summary
+
+This vignette demonstrated how to:
+
+1.  Load and work with Markov model output (the Sick-Sicker model)
+2.  Calculate undiscounted QALYs and costs by applying state utilities/costs
+3.  Apply discounting using `apply_discounting()` with appropriate rates
+4.  Set up time vectors following Dutch guidelines (no discounting in year 1)
+5.  Compare strategies using discounted outcomes
+
+For more detailed information about discounting, including sub-annual cycles and different timing assumptions, see the comprehensive vignette: `vignette("apply-discounting", package = "tatooheene")`.
+
+## References
+
+-   Alarid-Escudero F, Krijkamp EM, Enns EA, Yang A, Hunink MGM, Pechlivanoglou P, Jalal H. An Introductory Tutorial on Cohort State-Transition Models in R Using a Cost-Effectiveness Analysis Example. *Medical Decision Making*, 2023;43(1):3-20. <https://doi.org/10.1177/0272989X221103163>
+
+-   DARTH workgroup: <https://darthworkgroup.com>
+
+-   Dutch guideline for economic evaluations in healthcare (Richtlijn voor het uitvoeren van economische evaluaties in de gezondheidszorg), section 2.6.1.2 version 2024
